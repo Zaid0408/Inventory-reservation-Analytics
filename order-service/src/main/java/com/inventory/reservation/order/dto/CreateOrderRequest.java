@@ -20,4 +20,12 @@ public class CreateOrderRequest {
     public int getQuantity() {
         return quantity;
     }
+
+    public void setProductId(String productId) {
+        this.productId = productId;
+    }
+
+    public void setQuantity(int quantity) {
+        this.quantity = quantity;
+    }
 }
