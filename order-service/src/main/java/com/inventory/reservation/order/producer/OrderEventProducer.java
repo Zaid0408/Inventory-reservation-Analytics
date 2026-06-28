@@ -16,7 +16,7 @@ public class OrderEventProducer {
     }
 
     public void publishOrderCreated(OrderEvent orderEvent) {
-        log.info("Publishing order created event: {}", orderEvent.getOrderId());
         rabbitTemplate.convertAndSend(QueueConstants.ORDER_EXCHANGE, QueueConstants.ORDER_CREATED_ROUTING_KEY, orderEvent);
+        log.info("Order created event published to RabbitMQ: {}", orderEvent.getOrderId());
     }
 }
