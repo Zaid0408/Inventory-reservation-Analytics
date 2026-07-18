@@ -26,7 +26,7 @@ public class InventoryReservation {
     @Column(name = "order_id",unique = true)
     private long orderId;
 
-    @Column(name = "product_id")
+    @Column(name = "product_id", nullable = false, length = 36)
     private String productId;
 
     @Column(name = "quantity")

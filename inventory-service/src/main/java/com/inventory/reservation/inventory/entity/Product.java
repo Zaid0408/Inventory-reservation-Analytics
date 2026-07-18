@@ -12,9 +12,9 @@ import jakarta.persistence.Column;
 @Getter
 @Setter
 public class Product {
-    
+
     @Id
-    @Column(name = "id",unique = true)
+    @Column(name = "id", unique = true, nullable = false, length = 36)
     private String id;
 
     @Column(name = "name")
