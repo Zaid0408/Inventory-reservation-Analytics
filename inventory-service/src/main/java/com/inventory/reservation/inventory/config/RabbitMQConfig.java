@@ -8,7 +8,6 @@ import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
-import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 /*
 Concept:
 
@@ -66,10 +65,10 @@ public class RabbitMQConfig {
     This is used to receive messages from the order service.
     */
     @Bean
-    public SimpleRabbitListenerContainerFactory messageListenerContainerFactory(ConnectionFactory connectionFactory, MessageListenerAdapter messageListenerAdapter) {
+    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(ConnectionFactory connectionFactory, MessageConverter messageConverter) {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
-        factory.setMessageConverter(jsonMessageConverter());
+        factory.setMessageConverter(messageConverter);
         return factory;
     }
     

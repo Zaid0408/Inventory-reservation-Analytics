@@ -9,6 +9,7 @@ release.properties
 .idea/
 *.iml
 .vscode/
+.cursor/
 .classpath
 .project
 .settings/
