@@ -1,6 +1,7 @@
 package com.inventory.reservation.inventory.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.inventory.reservation.inventory.dto.OrderEvent;
 import com.inventory.reservation.inventory.repository.ProductRepository;
@@ -8,6 +9,8 @@ import com.inventory.reservation.inventory.repository.ReservationRepository;
 import com.inventory.reservation.inventory.entity.Product;
 import com.inventory.reservation.inventory.entity.InventoryReservation;
 import com.inventory.reservation.inventory.enums.ReservationEnums;
+import org.springframework.beans.factory.annotation.Value;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import lombok.extern.slf4j.Slf4j;
 
@@ -18,12 +21,15 @@ public class InventoryService {
     
     private final ProductRepository productRepository;
     private final ReservationRepository reservationRepository;
+    private final long reservationTtlMs;
 
-    public InventoryService(ProductRepository productRepository, ReservationRepository reservationRepository) {
+    public InventoryService(ProductRepository productRepository, ReservationRepository reservationRepository, @Value("${app.reservation.ttl-ms}") long reservationTtlMs) {
         this.productRepository = productRepository;
         this.reservationRepository = reservationRepository;
+        this.reservationTtlMs = reservationTtlMs;
     }
 
+    @Transactional
     public void reserveInventory(OrderEvent orderEvent) {
         Product product = productRepository.findProductForUpdate(orderEvent.getProductId()).orElseThrow(() -> new RuntimeException("Product not found"));
 
@@ -47,7 +53,7 @@ public class InventoryService {
         reservation.setProductId(orderEvent.getProductId());
         reservation.setQuantity(orderEvent.getQuantity());
         reservation.setStatus(ReservationEnums.ReservationStatus.RESERVED);
-        reservation.setExpiresAt(LocalDateTime.now().plusMinutes(10));
+        reservation.setExpiresAt(LocalDateTime.now().plus(Duration.ofMillis(reservationTtlMs)));
         reservationRepository.save(reservation);
 
     }
