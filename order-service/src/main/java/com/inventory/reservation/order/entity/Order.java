@@ -23,7 +23,7 @@ public class Order { // database table named orders
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
-    @Column(name = "product_id")
+    @Column(name = "product_id", nullable = false, length = 36)
     private String productId;
 
     @Column(name = "quantity")
