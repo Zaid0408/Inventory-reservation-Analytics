@@ -13,7 +13,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import com.inventory.reservation.order.enums.OrderEnums.OrderStatus;
-
+// This is the entity that will be used to store the order in PostgreSQL database. Not to be confused with the OrderEvent dto.
 @Entity
 @Table(name = "orders")
 @Getter

@@ -38,8 +38,10 @@ public class OrderService {
             .productId(order.getProductId())
             .quantity(order.getQuantity())
             .build();
-
+        // implement try catch here 
         orderEventProducer.publishOrderCreated(orderEvent); // Will publish the event to rabbit MQ
+
+        // Later enhancement is to keep the queue in asynchronous mode so in the background it will do its job of publishing but we early return the response to the client.
         return new CreateOrderResponse(201, order.getId(), "Order created successfully");
     }
 }

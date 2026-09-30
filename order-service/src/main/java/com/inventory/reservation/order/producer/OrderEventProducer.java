@@ -16,6 +16,7 @@ public class OrderEventProducer {
     }
 
     public void publishOrderCreated(OrderEvent orderEvent) {
+        // better to implement try catch here
         rabbitTemplate.convertAndSend(QueueConstants.ORDER_EXCHANGE, QueueConstants.ORDER_CREATED_ROUTING_KEY, orderEvent);
         log.info("Order created event published to RabbitMQ: {}", orderEvent.getOrderId());
     }
