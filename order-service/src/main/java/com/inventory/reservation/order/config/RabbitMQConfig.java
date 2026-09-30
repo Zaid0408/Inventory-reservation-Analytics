@@ -3,7 +3,6 @@ package com.inventory.reservation.order.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -32,19 +31,21 @@ Message is routed: The message is placed into the matching queue(s) to wait for 
 public class RabbitMQConfig {
     
     private final String orderCreatedQueue = QueueConstants.ORDER_CREATED_QUEUE;
-
+    // A buffer or storage box that holds messages until a consumer application (like an Inventory service) reads and processes them.
     @Bean
     public Queue orderCreatedQueue()
     {
         return new Queue(orderCreatedQueue);
     }
-
+    // The entry point for message producers. In RabbitMQ, producers never send messages directly to a queue.
+    //  Instead, they publish messages to an Exchange, which acts like a mail router deciding where messages should go
+    // A Direct Exchange routes messages based on an exact match between a message's routing key and a binding key.
     @Bean
     public DirectExchange orderExchange()
     {
         return new DirectExchange(QueueConstants.ORDER_EXCHANGE);
     }
-
+    // The physical link or relationship between an Exchange and a Queue. It tells the exchange: "If you receive a message with key X, send it to Queue Y."
     @Bean
     public Binding orderCreatedBinding(Queue orderCreatedQueue, DirectExchange orderExchange)
     {
@@ -54,7 +55,7 @@ public class RabbitMQConfig {
     public MessageConverter jsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
     }
-
+    // Spring's high-level helper class used by your application to publish and receive messages conveniently
     @Bean
     public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory, MessageConverter messageConverter) {
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
