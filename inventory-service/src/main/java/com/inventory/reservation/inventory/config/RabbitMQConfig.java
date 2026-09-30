@@ -45,6 +45,41 @@ public class RabbitMQConfig {
     }
 
     @Bean
+    public DirectExchange reservationTtlExchange()
+    {
+        return new DirectExchange(QueueConstants.RESERVATION_TTL_EXCHANGE);
+    }
+
+    @Bean
+    public DirectExchange deadLetterExchange()
+    {
+        return new DirectExchange(QueueConstants.DEAD_LETTER_EXCHANGE);
+    }
+
+    @Bean
+    public Queue reservationTtlQueue()
+    {
+        return QueueBuilder.durable(QueueConstants.RESERVATION_TTL_QUEUE).withArgument("x-message-ttl", 10000).withArgument("x-dead-letter-exchange", QueueConstants.DEAD_LETTER_EXCHANGE).withArgument("x-dead-letter-routing-key", QueueConstants.DEAD_LETTER_ROUTING_KEY).build();
+    }
+
+    @Bean
+    public Queue reservationExpiredQueue()
+    {
+        return QueueBuilder.durable(QueueConstants.RESERVATION_EXPIRED_QUEUE).withArgument("x-dead-letter-exchange", QueueConstants.DEAD_LETTER_EXCHANGE).withArgument("x-dead-letter-routing-key", QueueConstants.DEAD_LETTER_ROUTING_KEY).build();
+    }
+
+    @Bean
+    public Binding reservationTtlBinding(Queue reservationTtlQueue, DirectExchange reservationTtlExchange)
+    {
+        return BindingBuilder.bind(reservationTtlQueue).to(reservationTtlExchange).with(QueueConstants.RESERVATION_TTL_ROUTING_KEY);
+    }
+    @Bean
+    public Binding deadLetterBinding(Queue deadLetterQueue, DirectExchange deadLetterExchange)
+    {
+        return BindingBuilder.bind(deadLetterQueue).to(deadLetterExchange).with(QueueConstants.DEAD_LETTER_ROUTING_KEY);
+    }
+
+    @Bean
     public Binding orderCreatedBinding(Queue orderCreatedQueue, DirectExchange orderExchange)
     {
         return BindingBuilder.bind(orderCreatedQueue).to(orderExchange).with(QueueConstants.ORDER_CREATED_ROUTING_KEY);
