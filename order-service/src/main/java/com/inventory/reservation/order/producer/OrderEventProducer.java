@@ -20,4 +20,14 @@ public class OrderEventProducer {
         rabbitTemplate.convertAndSend(QueueConstants.ORDER_EXCHANGE, QueueConstants.ORDER_CREATED_ROUTING_KEY, orderEvent);
         log.info("Order created event published to RabbitMQ: {}", orderEvent.getOrderId());
     }
+
+    public void publishOrderConfirmed(OrderEvent orderEvent) {
+        rabbitTemplate.convertAndSend(QueueConstants.ORDER_EXCHANGE, QueueConstants.ORDER_CONFIRMED_ROUTING_KEY, orderEvent);
+        log.info("Order confirmed event published to RabbitMQ: {}", orderEvent.getOrderId());
+    }
+
+    public void publishOrderCancelled(OrderEvent orderEvent) {
+        rabbitTemplate.convertAndSend(QueueConstants.ORDER_EXCHANGE, QueueConstants.ORDER_CANCELLED_ROUTING_KEY, orderEvent);
+        log.info("Order cancelled event published to RabbitMQ: {}", orderEvent.getOrderId());
+    }
 }
