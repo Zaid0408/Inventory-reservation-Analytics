@@ -62,4 +62,36 @@ public class RabbitMQConfig {
         rabbitTemplate.setMessageConverter(messageConverter);
         return rabbitTemplate;
     }
+
+    @Bean
+    public Queue orderConfirmedQueue()
+    {
+        return new Queue(QueueConstants.ORDER_CONFIRMED_QUEUE);
+    }
+    @Bean
+    public DirectExchange orderConfirmedExchange()
+    {
+        return new DirectExchange(QueueConstants.ORDER_EXCHANGE);
+    }
+    @Bean
+    public Binding orderConfirmedBinding(Queue orderConfirmedQueue, DirectExchange orderConfirmedExchange)
+    {
+        return BindingBuilder.bind(orderConfirmedQueue).to(orderConfirmedExchange).with(QueueConstants.ORDER_CONFIRMED_ROUTING_KEY);
+    }
+
+    @Bean
+    public Queue ordercancelledQueue()
+    {
+        return new Queue(QueueConstants.ORDER_CANCELLED_QUEUE);
+    }
+    @Bean
+    public DirectExchange orderCancelledExchange()
+    {
+        return new DirectExchange(QueueConstants.ORDER_EXCHANGE);
+    }
+    @Bean
+    public Binding orderCancelledBinding(Queue orderCancelledQueue, DirectExchange orderCancelledExchange)
+    {
+        return BindingBuilder.bind(orderCancelledQueue).to(orderCancelledExchange).with(QueueConstants.ORDER_CANCELLED_ROUTING_KEY);
+    }
 }
