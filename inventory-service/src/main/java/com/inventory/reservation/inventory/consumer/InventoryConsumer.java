@@ -6,6 +6,7 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import lombok.extern.slf4j.Slf4j;
 import com.inventory.reservation.inventory.config.QueueConstants;
 import com.inventory.reservation.inventory.dto.OrderEvent;
+import com.inventory.reservation.inventory.dto.ReservationEvent;
 import com.inventory.reservation.inventory.service.InventoryService;
 
 @Component
@@ -24,6 +25,16 @@ public class InventoryConsumer {
             inventoryService.reserveInventory(orderEvent);
         } catch (Exception e) {
             log.error("Error reserving inventory for order: {}", orderEvent, e);
+        }
+    }
+
+    @RabbitListener(queues = QueueConstants.RESERVATION_EXPIRED_QUEUE)
+    public void processReservationExpiredEvent(ReservationEvent reservationEvent) {
+        try{
+            inventoryService.expireReservation(reservationEvent);
+        }
+        catch (Exception e) {
+            log.error("Error expiring reservation for order: {}", reservationEvent, e);
         }
     }
 }

@@ -67,4 +67,19 @@ public class InventoryService {
         reservationExpiryProducer.publishReservationExpiry(reservationEvent);
 
     }
+
+    @Transactional
+    public void expireReservation(ReservationEvent reservationEvent){
+        InventoryReservation reservation = reservationRepository.findByOrderId(reservationEvent.getOrderId()).orElseThrow(() -> new RuntimeException("Reservation not found"));
+        if(reservation.getStatus() != ReservationEnums.ReservationStatus.RESERVED){
+            log.info("Reservation not reserved for orderId: {}", reservationEvent.getOrderId());
+            return;
+        }
+        reservation.setStatus(ReservationEnums.ReservationStatus.EXPIRED);
+        reservationRepository.save(reservation);
+        Product product = productRepository.findProductForUpdate(reservation.getProductId()).orElseThrow(() -> new RuntimeException("Product not found"));
+        product.setAvailableStock(product.getAvailableStock() + reservation.getQuantity());
+        product.setReservedStock(product.getReservedStock() - reservation.getQuantity());
+        productRepository.save(product);
+    }
 }

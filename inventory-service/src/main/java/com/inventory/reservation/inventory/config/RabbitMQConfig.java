@@ -1,5 +1,6 @@
 package com.inventory.reservation.inventory.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.amqp.core.*;
@@ -39,6 +40,12 @@ public class RabbitMQConfig {
     }
 
     @Bean
+    public Queue deadLetterQueue()
+    {
+        return QueueBuilder.durable(QueueConstants.DEAD_LETTER_QUEUE).build();
+    }
+
+    @Bean
     public DirectExchange orderExchange()
     {
         return new DirectExchange(QueueConstants.ORDER_EXCHANGE);
@@ -57,15 +64,15 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Queue reservationTtlQueue()
+    public Queue reservationTtlQueue(@Value("${app.reservation.ttl-ms}") int reservationTtlMs)
     {
-        return QueueBuilder.durable(QueueConstants.RESERVATION_TTL_QUEUE).withArgument("x-message-ttl", 10000).withArgument("x-dead-letter-exchange", QueueConstants.DEAD_LETTER_EXCHANGE).withArgument("x-dead-letter-routing-key", QueueConstants.DEAD_LETTER_ROUTING_KEY).build();
+        return QueueBuilder.durable(QueueConstants.RESERVATION_TTL_QUEUE).deadLetterExchange(QueueConstants.DEAD_LETTER_EXCHANGE).deadLetterRoutingKey(QueueConstants.RESERVATION_EXPIRED_ROUTING_KEY).ttl(reservationTtlMs).build();
     }
 
     @Bean
     public Queue reservationExpiredQueue()
     {
-        return QueueBuilder.durable(QueueConstants.RESERVATION_EXPIRED_QUEUE).withArgument("x-dead-letter-exchange", QueueConstants.DEAD_LETTER_EXCHANGE).withArgument("x-dead-letter-routing-key", QueueConstants.DEAD_LETTER_ROUTING_KEY).build();
+        return QueueBuilder.durable(QueueConstants.RESERVATION_EXPIRED_QUEUE).build();
     }
 
     @Bean
@@ -73,6 +80,13 @@ public class RabbitMQConfig {
     {
         return BindingBuilder.bind(reservationTtlQueue).to(reservationTtlExchange).with(QueueConstants.RESERVATION_TTL_ROUTING_KEY);
     }
+
+    @Bean
+    public Binding reservationExpiredBinding(Queue reservationExpiredQueue, DirectExchange deadLetterExchange)
+    {
+        return BindingBuilder.bind(reservationExpiredQueue).to(deadLetterExchange).with(QueueConstants.RESERVATION_EXPIRED_ROUTING_KEY);
+    }
+
     @Bean
     public Binding deadLetterBinding(Queue deadLetterQueue, DirectExchange deadLetterExchange)
     {
@@ -84,6 +98,7 @@ public class RabbitMQConfig {
     {
         return BindingBuilder.bind(orderCreatedQueue).to(orderExchange).with(QueueConstants.ORDER_CREATED_ROUTING_KEY);
     }
+
     @Bean
     public MessageConverter jsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
@@ -106,5 +121,5 @@ public class RabbitMQConfig {
         factory.setMessageConverter(messageConverter);
         return factory;
     }
-    
+
 }
