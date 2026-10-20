@@ -5,6 +5,7 @@ public class ReservationEnums {
         RESERVED("RESERVED"),
         EXPIRED("EXPIRED"),
         CANCELLED("CANCELLED"),
+        CONFIRMED("CONFIRMED"),
         FAILED("FAILED");
 
         private final String value;
