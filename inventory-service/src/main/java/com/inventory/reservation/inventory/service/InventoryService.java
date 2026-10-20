@@ -11,6 +11,8 @@ import com.inventory.reservation.inventory.entity.Product;
 import com.inventory.reservation.inventory.entity.InventoryReservation;
 import com.inventory.reservation.inventory.producer.ReservationExpiryProducer;
 import com.inventory.reservation.inventory.enums.ReservationEnums;
+import com.inventory.reservation.inventory.enums.ReservationEnums.ReservationStatus;
+
 import org.springframework.beans.factory.annotation.Value;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -69,17 +71,50 @@ public class InventoryService {
     }
 
     @Transactional
+    public void confirmOrder(OrderEvent orderEvent){
+        InventoryReservation reservation=reservationRepository.findByOrderId(orderEvent.getOrderId()).orElseThrow(() -> new RuntimeException("Reservation not found"));
+        if(reservation.getStatus() != ReservationStatus.RESERVED){
+            throw new RuntimeException("Reservation not reserved for orderId: "+ orderEvent.getOrderId());
+        }
+
+        reservation.setStatus(ReservationStatus.CONFIRMED);
+        reservationRepository.save(reservation);
+
+        Product product= productRepository.findProductForUpdate(reservation.getProductId()).orElseThrow(()-> new RuntimeException("Product not found"));
+        product.setReservedStock(product.getReservedStock()- reservation.getQuantity()); 
+        productRepository.save(product);
+
+        // TODO: Since Product is confirmed , what to do next ?
+    }
+
+    @Transactional
+    public void cancelOrder(OrderEvent orderEvent){
+        InventoryReservation reservation=reservationRepository.findByOrderId(orderEvent.getOrderId()).orElseThrow(() -> new RuntimeException("Reservation not found"));
+        if(reservation.getStatus() != ReservationStatus.RESERVED){
+            throw new RuntimeException("Reservation not reserved for orderId: "+ orderEvent.getOrderId());
+        }
+        reservation.setStatus(ReservationEnums.ReservationStatus.CANCELLED);
+        reservationRepository.save(reservation);
+
+        Product product= productRepository.findProductForUpdate(reservation.getProductId()).orElseThrow(()-> new RuntimeException("Product not found"));
+        product.setAvailableStock(product.getAvailableStock()+ reservation.getQuantity());
+        product.setReservedStock(product.getReservedStock()- reservation.getQuantity()); 
+        productRepository.save(product);
+
+        // TODO: Since Product is cancelled , what to do next ?
+    }
+
+    @Transactional
     public void expireReservation(ReservationEvent reservationEvent){
         InventoryReservation reservation = reservationRepository.findByOrderId(reservationEvent.getOrderId()).orElseThrow(() -> new RuntimeException("Reservation not found"));
         if(reservation.getStatus() != ReservationEnums.ReservationStatus.RESERVED){
-            log.info("Reservation not reserved for orderId: {}", reservationEvent.getOrderId());
-            return;
+            throw new RuntimeException("Reservation not reserved for orderId: "+ reservationEvent.getOrderId());
         }
         reservation.setStatus(ReservationEnums.ReservationStatus.EXPIRED);
         reservationRepository.save(reservation);
-        Product product = productRepository.findProductForUpdate(reservation.getProductId()).orElseThrow(() -> new RuntimeException("Product not found"));
+        Product product = productRepository.findProductForUpdate(reservation.getProductId()).orElseThrow(()-> new RuntimeException("Product not found"));
         product.setAvailableStock(product.getAvailableStock() + reservation.getQuantity());
-        product.setReservedStock(product.getReservedStock() - reservation.getQuantity());
+        product.setReservedStock(product.getReservedStock() - reservation.getQuantity()); 
         productRepository.save(product);
     }
 }
