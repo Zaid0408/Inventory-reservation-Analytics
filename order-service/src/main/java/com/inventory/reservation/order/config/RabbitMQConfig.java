@@ -1,6 +1,7 @@
 package com.inventory.reservation.order.config;
 
 import org.springframework.context.annotation.Bean;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.annotation.Configuration;
@@ -47,6 +48,7 @@ public class RabbitMQConfig {
     }
     // The physical link or relationship between an Exchange and a Queue. It tells the exchange: "If you receive a message with key X, send it to Queue Y."
     @Bean
+    @Qualifier("orderCreatedQueue")
     public Binding orderCreatedBinding(Queue orderCreatedQueue, DirectExchange orderExchange)
     {
         return BindingBuilder.bind(orderCreatedQueue).to(orderExchange).with(QueueConstants.ORDER_CREATED_ROUTING_KEY);
@@ -69,29 +71,21 @@ public class RabbitMQConfig {
         return new Queue(QueueConstants.ORDER_CONFIRMED_QUEUE);
     }
     @Bean
-    public DirectExchange orderConfirmedExchange()
+    @Qualifier("orderConfirmedQueue")
+    public Binding orderConfirmedBinding(Queue orderConfirmedQueue, DirectExchange orderExchange)
     {
-        return new DirectExchange(QueueConstants.ORDER_EXCHANGE);
+        return BindingBuilder.bind(orderConfirmedQueue).to(orderExchange).with(QueueConstants.ORDER_CONFIRMED_ROUTING_KEY);
     }
+    // Resuse the same exchange for all queues
     @Bean
-    public Binding orderConfirmedBinding(Queue orderConfirmedQueue, DirectExchange orderConfirmedExchange)
-    {
-        return BindingBuilder.bind(orderConfirmedQueue).to(orderConfirmedExchange).with(QueueConstants.ORDER_CONFIRMED_ROUTING_KEY);
-    }
-
-    @Bean
-    public Queue ordercancelledQueue()
+    public Queue orderCancelledQueue()
     {
         return new Queue(QueueConstants.ORDER_CANCELLED_QUEUE);
     }
     @Bean
-    public DirectExchange orderCancelledExchange()
+    @Qualifier("orderCancelledQueue")
+    public Binding orderCancelledBinding(Queue orderCancelledQueue, DirectExchange orderExchange)
     {
-        return new DirectExchange(QueueConstants.ORDER_EXCHANGE);
-    }
-    @Bean
-    public Binding orderCancelledBinding(Queue orderCancelledQueue, DirectExchange orderCancelledExchange)
-    {
-        return BindingBuilder.bind(orderCancelledQueue).to(orderCancelledExchange).with(QueueConstants.ORDER_CANCELLED_ROUTING_KEY);
+        return BindingBuilder.bind(orderCancelledQueue).to(orderExchange).with(QueueConstants.ORDER_CANCELLED_ROUTING_KEY);
     }
 }
