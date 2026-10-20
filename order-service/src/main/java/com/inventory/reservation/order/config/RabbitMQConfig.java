@@ -1,6 +1,7 @@
 package com.inventory.reservation.order.config;
 
 import org.springframework.context.annotation.Bean;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.annotation.Configuration;
@@ -47,6 +48,7 @@ public class RabbitMQConfig {
     }
     // The physical link or relationship between an Exchange and a Queue. It tells the exchange: "If you receive a message with key X, send it to Queue Y."
     @Bean
+    @Qualifier("orderCreatedQueue")
     public Binding orderCreatedBinding(Queue orderCreatedQueue, DirectExchange orderExchange)
     {
         return BindingBuilder.bind(orderCreatedQueue).to(orderExchange).with(QueueConstants.ORDER_CREATED_ROUTING_KEY);
@@ -61,5 +63,29 @@ public class RabbitMQConfig {
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         rabbitTemplate.setMessageConverter(messageConverter);
         return rabbitTemplate;
+    }
+
+    @Bean
+    public Queue orderConfirmedQueue()
+    {
+        return new Queue(QueueConstants.ORDER_CONFIRMED_QUEUE);
+    }
+    @Bean
+    @Qualifier("orderConfirmedQueue")
+    public Binding orderConfirmedBinding(Queue orderConfirmedQueue, DirectExchange orderExchange)
+    {
+        return BindingBuilder.bind(orderConfirmedQueue).to(orderExchange).with(QueueConstants.ORDER_CONFIRMED_ROUTING_KEY);
+    }
+    // Resuse the same exchange for all queues
+    @Bean
+    public Queue orderCancelledQueue()
+    {
+        return new Queue(QueueConstants.ORDER_CANCELLED_QUEUE);
+    }
+    @Bean
+    @Qualifier("orderCancelledQueue")
+    public Binding orderCancelledBinding(Queue orderCancelledQueue, DirectExchange orderExchange)
+    {
+        return BindingBuilder.bind(orderCancelledQueue).to(orderExchange).with(QueueConstants.ORDER_CANCELLED_ROUTING_KEY);
     }
 }

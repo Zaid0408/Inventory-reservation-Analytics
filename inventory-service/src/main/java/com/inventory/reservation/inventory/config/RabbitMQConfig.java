@@ -31,72 +31,127 @@ Message is routed: The message is placed into the matching queue(s) to wait for 
 @Configuration
 public class RabbitMQConfig {
 
-    private final String orderCreatedQueue = QueueConstants.ORDER_CREATED_QUEUE;
+    // -------------------------------------------------------------------------
+    // order.created.queue — order-service publishes; InventoryConsumer reserves
+    // Exchange: order.exchange | Routing key: order.created
+    // -------------------------------------------------------------------------
 
     @Bean
-    public Queue orderCreatedQueue()
-    {
-        return new Queue(orderCreatedQueue);
+    public Queue orderCreatedQueue() {
+        return new Queue(QueueConstants.ORDER_CREATED_QUEUE);
     }
 
     @Bean
-    public Queue deadLetterQueue()
-    {
-        return QueueBuilder.durable(QueueConstants.DEAD_LETTER_QUEUE).build();
-    }
-
-    @Bean
-    public DirectExchange orderExchange()
-    {
+    public DirectExchange orderExchange() {
         return new DirectExchange(QueueConstants.ORDER_EXCHANGE);
     }
 
     @Bean
-    public DirectExchange reservationTtlExchange()
-    {
+    public Binding orderCreatedBinding(Queue orderCreatedQueue, DirectExchange orderExchange) {
+        return BindingBuilder.bind(orderCreatedQueue)
+                .to(orderExchange)
+                .with(QueueConstants.ORDER_CREATED_ROUTING_KEY);
+    }
+
+    // -------------------------------------------------------------------------
+    // reservation.ttl.queue — delay timer after reserve; no consumer (Step 7)
+    // Exchange: reservation.ttl.exchange | Routing key: reservation.expiry
+    // On TTL: dead-letter to dead.letter.exchange with key reservation.expired
+    // -------------------------------------------------------------------------
+
+    @Bean
+    public Queue reservationTtlQueue(@Value("${app.reservation.ttl-ms}") int reservationTtlMs) {
+        return QueueBuilder.durable(QueueConstants.RESERVATION_TTL_QUEUE)
+                .deadLetterExchange(QueueConstants.DEAD_LETTER_EXCHANGE)
+                .deadLetterRoutingKey(QueueConstants.RESERVATION_EXPIRED_ROUTING_KEY)
+                .ttl(reservationTtlMs)
+                .build();
+    }
+
+    @Bean
+    public DirectExchange reservationTtlExchange() {
         return new DirectExchange(QueueConstants.RESERVATION_TTL_EXCHANGE);
     }
 
     @Bean
-    public DirectExchange deadLetterExchange()
-    {
-        return new DirectExchange(QueueConstants.DEAD_LETTER_EXCHANGE);
+    public Binding reservationTtlBinding(Queue reservationTtlQueue, DirectExchange reservationTtlExchange) {
+        return BindingBuilder.bind(reservationTtlQueue)
+                .to(reservationTtlExchange)
+                .with(QueueConstants.RESERVATION_TTL_ROUTING_KEY);
     }
 
-    @Bean
-    public Queue reservationTtlQueue(@Value("${app.reservation.ttl-ms}") int reservationTtlMs)
-    {
-        return QueueBuilder.durable(QueueConstants.RESERVATION_TTL_QUEUE).deadLetterExchange(QueueConstants.DEAD_LETTER_EXCHANGE).deadLetterRoutingKey(QueueConstants.RESERVATION_EXPIRED_ROUTING_KEY).ttl(reservationTtlMs).build();
-    }
+    // -------------------------------------------------------------------------
+    // reservation.expired.queue — TTL expired; InventoryConsumer releases stock (Step 8)
+    // Exchange: dead.letter.exchange | Routing key: reservation.expired
+    // -------------------------------------------------------------------------
 
     @Bean
-    public Queue reservationExpiredQueue()
-    {
+    public Queue reservationExpiredQueue() {
         return QueueBuilder.durable(QueueConstants.RESERVATION_EXPIRED_QUEUE).build();
     }
 
     @Bean
-    public Binding reservationTtlBinding(Queue reservationTtlQueue, DirectExchange reservationTtlExchange)
-    {
-        return BindingBuilder.bind(reservationTtlQueue).to(reservationTtlExchange).with(QueueConstants.RESERVATION_TTL_ROUTING_KEY);
+    public DirectExchange deadLetterExchange() {
+        return new DirectExchange(QueueConstants.DEAD_LETTER_EXCHANGE);
     }
 
     @Bean
-    public Binding reservationExpiredBinding(Queue reservationExpiredQueue, DirectExchange deadLetterExchange)
-    {
-        return BindingBuilder.bind(reservationExpiredQueue).to(deadLetterExchange).with(QueueConstants.RESERVATION_EXPIRED_ROUTING_KEY);
+    public Binding reservationExpiredBinding(Queue reservationExpiredQueue, DirectExchange deadLetterExchange) {
+        return BindingBuilder.bind(reservationExpiredQueue)
+                .to(deadLetterExchange)
+                .with(QueueConstants.RESERVATION_EXPIRED_ROUTING_KEY);
+    }
+
+    // -------------------------------------------------------------------------
+    // dead.letter.queue — permanent failures after retries (later steps)
+    // Exchange: dead.letter.exchange (same bean as above) | Routing key: dead.letter
+    // -------------------------------------------------------------------------
+
+    @Bean
+    public Queue deadLetterQueue() {
+        return QueueBuilder.durable(QueueConstants.DEAD_LETTER_QUEUE).build();
     }
 
     @Bean
-    public Binding deadLetterBinding(Queue deadLetterQueue, DirectExchange deadLetterExchange)
-    {
-        return BindingBuilder.bind(deadLetterQueue).to(deadLetterExchange).with(QueueConstants.DEAD_LETTER_ROUTING_KEY);
+    public Binding deadLetterBinding(Queue deadLetterQueue, DirectExchange deadLetterExchange) {
+        return BindingBuilder.bind(deadLetterQueue)
+                .to(deadLetterExchange)
+                .with(QueueConstants.DEAD_LETTER_ROUTING_KEY);
+    }
+
+    // -------------------------------------------------------------------------
+    // order.confirmed.queue — order-service confirms; InventoryConsumer reserves
+    // Exchange: order.exchange | Routing key: order.confirmed
+    // -------------------------------------------------------------------------
+    @Bean
+    public Queue orderConfirmedQueue() {
+        return new Queue(QueueConstants.ORDER_CONFIRMED_QUEUE);
     }
 
     @Bean
-    public Binding orderCreatedBinding(Queue orderCreatedQueue, DirectExchange orderExchange)
+    public DirectExchange orderConfirmedExchange() {
+        return new DirectExchange(QueueConstants.ORDER_EXCHANGE);
+    }
+
+    @Bean
+    public Binding orderConfirmedBinding(Queue orderConfirmedQueue, DirectExchange orderConfirmedExchange) {
+        return BindingBuilder.bind(orderConfirmedQueue).to(orderConfirmedExchange).with(QueueConstants.ORDER_CONFIRMED_ROUTING_KEY);
+    }
+
+    @Bean
+    public  Queue orderCancelledQueue()
     {
-        return BindingBuilder.bind(orderCreatedQueue).to(orderExchange).with(QueueConstants.ORDER_CREATED_ROUTING_KEY);
+        return new Queue(QueueConstants.ORDER_CANCELLED_QUEUE);
+    }
+
+    @Bean
+    public DirectExchange orderCancelledExchange() {
+        return new DirectExchange(QueueConstants.ORDER_EXCHANGE);
+    }
+
+    @Bean
+    public Binding orderCancelledBinding(Queue orderCancelledQueue, DirectExchange orderCancelledExchange) {
+        return BindingBuilder.bind(orderCancelledQueue).to(orderCancelledExchange).with(QueueConstants.ORDER_CANCELLED_ROUTING_KEY);
     }
 
     @Bean

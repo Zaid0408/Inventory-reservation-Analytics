@@ -37,4 +37,22 @@ public class InventoryConsumer {
             log.error("Error expiring reservation for order: {}", reservationEvent, e);
         }
     }
+
+    @RabbitListener(queues = QueueConstants.ORDER_CONFIRMED_QUEUE)
+    public void processOrderConfirmedEvent(OrderEvent orderEvent){
+        try {
+            inventoryService.confirmOrder(orderEvent);
+        } catch (Exception e) {
+            log.error("Error confirming order: {}", orderEvent, e);
+        }
+    }
+
+    @RabbitListener(queues = QueueConstants.ORDER_CANCELLED_QUEUE)
+    public void processOrderCancelledEvent(OrderEvent orderEvent){
+        try {
+            inventoryService.cancelOrder(orderEvent);
+        } catch (Exception e) {
+            log.error("Error cancelling order: {}", orderEvent, e);
+        }
+    }
 }
