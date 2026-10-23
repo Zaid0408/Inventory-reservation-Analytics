@@ -36,7 +36,10 @@ public class RabbitMQConfig {
     @Bean
     public Queue orderCreatedQueue()
     {
-        return new Queue(orderCreatedQueue);
+        return QueueBuilder.durable(orderCreatedQueue)
+            .deadLetterExchange(QueueConstants.DEAD_LETTER_EXCHANGE)
+            .deadLetterRoutingKey(QueueConstants.DEAD_LETTER_ROUTING_KEY)
+            .build();
     }
     // The entry point for message producers. In RabbitMQ, producers never send messages directly to a queue.
     //  Instead, they publish messages to an Exchange, which acts like a mail router deciding where messages should go
@@ -68,7 +71,10 @@ public class RabbitMQConfig {
     @Bean
     public Queue orderConfirmedQueue()
     {
-        return new Queue(QueueConstants.ORDER_CONFIRMED_QUEUE);
+        return QueueBuilder.durable(QueueConstants.ORDER_CONFIRMED_QUEUE)
+            .deadLetterExchange(QueueConstants.DEAD_LETTER_EXCHANGE)
+            .deadLetterRoutingKey(QueueConstants.DEAD_LETTER_ROUTING_KEY)
+            .build();
     }
     @Bean
     @Qualifier("orderConfirmedQueue")
@@ -80,7 +86,10 @@ public class RabbitMQConfig {
     @Bean
     public Queue orderCancelledQueue()
     {
-        return new Queue(QueueConstants.ORDER_CANCELLED_QUEUE);
+        return QueueBuilder.durable(QueueConstants.ORDER_CANCELLED_QUEUE)
+            .deadLetterExchange(QueueConstants.DEAD_LETTER_EXCHANGE)
+            .deadLetterRoutingKey(QueueConstants.DEAD_LETTER_ROUTING_KEY)
+            .build();
     }
     @Bean
     @Qualifier("orderCancelledQueue")
