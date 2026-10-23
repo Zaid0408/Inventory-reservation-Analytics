@@ -28,7 +28,12 @@ spring:
       enabled: ${RABBITMQ_SSL_ENABLED:false}
     listener:
       simple:
-        default-requeue-rejected: true
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1000
+          multiplier: 2
+        default-requeue-rejected: false # If the message is rejected even after retries, it will not be requeued ie not be put back in the queue
 
 app:
   reservation:
