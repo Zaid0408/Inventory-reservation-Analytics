@@ -37,6 +37,7 @@ public class InventoryService {
 
     @Transactional
     public void reserveInventory(OrderEvent orderEvent) {
+        // throw new RuntimeException("DLQ test"); // DLQ test
         Product product = productRepository.findProductForUpdate(orderEvent.getProductId()).orElseThrow(() -> new RuntimeException("Product not found"));
         // return the exception properly so that client knows that resource not found.
         if(product.getAvailableStock() < orderEvent.getQuantity()){
@@ -83,8 +84,6 @@ public class InventoryService {
         Product product= productRepository.findProductForUpdate(reservation.getProductId()).orElseThrow(()-> new RuntimeException("Product not found"));
         product.setReservedStock(product.getReservedStock()- reservation.getQuantity()); 
         productRepository.save(product);
-
-        // TODO: Since Product is confirmed , what to do next ?
     }
 
     @Transactional
