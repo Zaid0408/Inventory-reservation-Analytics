@@ -25,6 +25,7 @@ public class InventoryConsumer {
             inventoryService.reserveInventory(orderEvent);
         } catch (Exception e) {
             log.error("Error reserving inventory for order: {}", orderEvent, e);
+            throw e;
         }
     }
 
@@ -35,6 +36,7 @@ public class InventoryConsumer {
         }
         catch (Exception e) {
             log.error("Error expiring reservation for order: {}", reservationEvent, e);
+            throw e;
         }
     }
 
@@ -44,6 +46,7 @@ public class InventoryConsumer {
             inventoryService.confirmOrder(orderEvent);
         } catch (Exception e) {
             log.error("Error confirming order: {}", orderEvent, e);
+            throw e;
         }
     }
 
@@ -53,6 +56,7 @@ public class InventoryConsumer {
             inventoryService.cancelOrder(orderEvent);
         } catch (Exception e) {
             log.error("Error cancelling order: {}", orderEvent, e);
+            throw e;
         }
     }
 }
