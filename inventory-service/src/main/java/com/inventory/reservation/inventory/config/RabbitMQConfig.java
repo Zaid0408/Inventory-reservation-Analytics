@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.boot.autoconfigure.amqp.SimpleRabbitListenerContainerFactoryConfigurer;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -32,13 +33,16 @@ Message is routed: The message is placed into the matching queue(s) to wait for 
 public class RabbitMQConfig {
 
     // -------------------------------------------------------------------------
-    // order.created.queue — order-service publishes; InventoryConsumer reserves
+    // order.created.queue — order-service publishes; InventoryConsumer creates + reserves
     // Exchange: order.exchange | Routing key: order.created
     // -------------------------------------------------------------------------
 
     @Bean
     public Queue orderCreatedQueue() {
-        return new Queue(QueueConstants.ORDER_CREATED_QUEUE);
+        return QueueBuilder.durable(QueueConstants.ORDER_CREATED_QUEUE)
+            .deadLetterExchange(QueueConstants.DEAD_LETTER_EXCHANGE)
+            .deadLetterRoutingKey(QueueConstants.DEAD_LETTER_ROUTING_KEY)  // "dead.letter"
+            .build();
     }
 
     @Bean
@@ -87,7 +91,10 @@ public class RabbitMQConfig {
 
     @Bean
     public Queue reservationExpiredQueue() {
-        return QueueBuilder.durable(QueueConstants.RESERVATION_EXPIRED_QUEUE).build();
+        return QueueBuilder.durable(QueueConstants.RESERVATION_EXPIRED_QUEUE)
+            .deadLetterExchange(QueueConstants.DEAD_LETTER_EXCHANGE)
+            .deadLetterRoutingKey(QueueConstants.DEAD_LETTER_ROUTING_KEY)
+            .build();
     }
 
     @Bean
@@ -120,12 +127,15 @@ public class RabbitMQConfig {
     }
 
     // -------------------------------------------------------------------------
-    // order.confirmed.queue — order-service confirms; InventoryConsumer reserves
+    // order.confirmed.queue — order-service confirms; InventoryConsumer confirms the order
     // Exchange: order.exchange | Routing key: order.confirmed
     // -------------------------------------------------------------------------
     @Bean
     public Queue orderConfirmedQueue() {
-        return new Queue(QueueConstants.ORDER_CONFIRMED_QUEUE);
+        return QueueBuilder.durable(QueueConstants.ORDER_CONFIRMED_QUEUE)
+            .deadLetterExchange(QueueConstants.DEAD_LETTER_EXCHANGE)
+            .deadLetterRoutingKey(QueueConstants.DEAD_LETTER_ROUTING_KEY)
+            .build();
     }
 
     @Bean
@@ -141,7 +151,10 @@ public class RabbitMQConfig {
     @Bean
     public  Queue orderCancelledQueue()
     {
-        return new Queue(QueueConstants.ORDER_CANCELLED_QUEUE);
+        return QueueBuilder.durable(QueueConstants.ORDER_CANCELLED_QUEUE)
+            .deadLetterExchange(QueueConstants.DEAD_LETTER_EXCHANGE)
+            .deadLetterRoutingKey(QueueConstants.DEAD_LETTER_ROUTING_KEY)
+            .build();
     }
 
     @Bean
@@ -170,11 +183,16 @@ public class RabbitMQConfig {
     This is used to receive messages from the order service.
     */
     @Bean
-    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(ConnectionFactory connectionFactory, MessageConverter messageConverter) {
+    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(ConnectionFactory connectionFactory, MessageConverter messageConverter, SimpleRabbitListenerContainerFactoryConfigurer configurer) {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
-        factory.setConnectionFactory(connectionFactory);
+        configurer.configure(factory, connectionFactory); // will read the retries, max attempts, etc from the application.yml file.
         factory.setMessageConverter(messageConverter);
         return factory;
     }
+    /*
+    1. By calling configurer.configure(factory, connectionFactory) first, Spring Boot reads your listener.simple.retry.max-attempts: 3 and listener.simple.default-requeue-rejected: false from the application.yml and injects them directly into the container factory.
+    2. When a listener throws an exception now, RabbitMQ will attempt local retries up to 3 times.
+    3. If it still fails after 3 attempts, it respects default-requeue-rejected: false. Instead of sending the message back to the queue for an infinite loop, it will either drop the message or send it to a Dead Letter Exchange (DLX) and routing key.
+    */
 
 }
