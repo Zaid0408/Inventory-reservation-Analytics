@@ -1,0 +1,44 @@
+\dt          -- list tables
+\d orders    -- describe orders table
+SELECT * FROM orders;
+\q           -- quit
+
+# Login to psql
+docker exec -it <container_name_or_id> psql -U <username> -d <database_name>
+docker exec -it inventory-postgres psql -U postgres -d inventory_db
+
+
+
+# List all tables
+docker exec -it inventory-postgres psql -U postgres -d inventory_db -c "\dt"
+
+# See table structure
+docker exec -it inventory-postgres psql -U postgres -d inventory_db -c "\d orders"
+
+# View all orders
+docker exec -it inventory-postgres psql -U postgres -d inventory_db -c "SELECT * FROM orders;"
+
+# Nicer formatted view
+docker exec -it inventory-postgres psql -U postgres -d inventory_db -c "
+SELECT id, product_id, quantity, status, created_at, updated_at
+FROM orders
+ORDER BY id DESC;
+"
+
+# Count orders
+docker exec -it inventory-postgres psql -U postgres -d inventory_db -c "SELECT COUNT(*) FROM orders;"
+
+# Filter by status
+docker exec -it inventory-postgres psql -U postgres -d inventory_db -c "
+SELECT id, product_id, quantity, status
+FROM orders
+WHERE status = 'CREATED';
+"
+
+# Get a specific order
+docker exec -it inventory-postgres psql -U postgres -d inventory_db -c "
+SELECT * FROM orders WHERE id = 2;
+"
+
+# Login to the docker DB
+docker exec -it inventory-postgres psql -U postgres -d inventory_db 
